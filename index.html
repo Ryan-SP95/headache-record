@@ -225,6 +225,7 @@ textarea{resize:vertical;min-height:70px}
 <section id="summary" hidden>
   <div id="summaryBody"></div>
   <button class="ghost" onclick="window.print()">Print this summary</button>
+  <button class="ghost" id="xlsxBtn" onclick="exportXLSX()">Download as Excel (.xlsx)</button>
   <button class="ghost" onclick="exportCSV()">Download all entries as CSV</button>
   <div class="datatools">
     <p>A backup file is the only way to move your entries to another phone or get them back after clearing your browser. Worth doing every month or so.</p>
@@ -475,7 +476,85 @@ async function restore(input){
   toast(added.length ? added.length+" entries restored" : "Already up to date");
 }
 
-/* ---------- export ---------- */
+/* ---------- export: Excel ---------- */
+// SheetJS loads on demand — most sessions never click this button,
+// so there's no reason to make it part of the offline-cached shell.
+let sheetJSLoading = null;
+function loadSheetJS(){
+  if(window.XLSX) return Promise.resolve();
+  if(sheetJSLoading) return sheetJSLoading;
+  sheetJSLoading = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload = resolve;
+    s.onerror = () => { sheetJSLoading = null; reject(new Error("load failed")); };
+    document.head.appendChild(s);
+  });
+  return sheetJSLoading;
+}
+
+async function exportXLSX(){
+  if(!entries.length){ toast("Nothing to export yet."); return; }
+  const btn = $("xlsxBtn");
+  const original = btn.textContent;
+  btn.textContent = "Preparing file\u2026"; btn.disabled = true;
+  try{
+    await loadSheetJS();
+
+    // --- sheet 1: one row per entry, plain columns, newest first ---
+    const logRows = entries.map(e => ({
+      "Date": e.date,
+      "Start": e.start || "",
+      "End": e.end || "",
+      "Duration (hrs)": e.duration ?? "",
+      "Functional impact": IMPACT_TEXT[e.impact] || "",
+      "Peak pain (0-10)": e.pain ?? "",
+      "Symptoms": e.symptoms.join(", "),
+      "Work / plans effect": e.work || "",
+      "Medication": e.med || "",
+      "Relief": e.relief || "",
+      "Sleep prior night (hrs)": e.sleep || "",
+      "Possible triggers": e.trig || "",
+      "Notes": e.notes || ""
+    }));
+    const logSheet = XLSX.utils.json_to_sheet(logRows);
+    logSheet["!cols"] = [10,7,7,10,17,10,26,16,20,10,11,26,34].map(w => ({wch:w}));
+
+    // --- sheet 2: the same monthly rollup shown in the Summary tab ---
+    const byM = {};
+    entries.forEach(e => { const k = e.date.slice(0,7); (byM[k] = byM[k] || []).push(e); });
+    const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : "";
+    const round1 = v => v === "" ? "" : Math.round(v*10)/10;
+    const summaryRows = Object.keys(byM).sort().reverse().map(k => {
+      const g = byM[k];
+      const durs = g.filter(e => e.duration != null).map(e => e.duration);
+      const pains = g.map(e => e.pain).filter(p => p != null);
+      const [y,m] = k.split("-");
+      return {
+        "Month": new Date(y,m-1,1).toLocaleDateString(undefined,{month:"long",year:"numeric"}),
+        "Entries": g.length,
+        "Activity stopped": g.filter(e => e.impact >= 3).length,
+        "Avg duration (hrs)": round1(avg(durs)),
+        "Avg pain": round1(avg(pains)),
+        "Medication days": new Set(g.filter(e => e.med).map(e => e.date)).size,
+        "Work/plans affected": g.filter(e => ["Left early","Missed a full day","Worked but reduced","Cancelled plans"].includes(e.work)).length
+      };
+    });
+    const sumSheet = XLSX.utils.json_to_sheet(summaryRows);
+    sumSheet["!cols"] = [16,8,15,15,9,15,17].map(w => ({wch:w}));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, logSheet, "Headache Log");
+    XLSX.utils.book_append_sheet(wb, sumSheet, "Monthly Summary");
+    XLSX.writeFile(wb, "headache-record-" + new Date().toISOString().slice(0,10) + ".xlsx");
+  } catch(err){
+    toast("Couldn't build the Excel file — needs an internet connection the first time.");
+  } finally {
+    btn.textContent = original; btn.disabled = false;
+  }
+}
+
+/* ---------- export: CSV ---------- */
 function exportCSV(){
   const cols=["date","start","end","duration","impact","impact_description","pain","symptoms","work","med","relief","sleep","trig","notes"];
   const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;

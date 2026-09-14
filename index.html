@@ -83,7 +83,19 @@ textarea{resize:vertical;min-height:70px}
 .banner button{background:none;border:1px solid #C7A86E;color:#F2E8D6;border-radius:6px;
   padding:5px 11px;font-family:var(--sans);font-size:.82rem;cursor:pointer;flex:none}
 .datatools{margin-top:30px;padding-top:18px;border-top:1px solid var(--line)}
-.datatools p{font-size:.78rem;color:var(--soft);margin:0 0 10px;line-height:1.5}
+.datatools p{font-size:.78rem;color:var(--soft);margin:16px 0 8px}
+.datatools p:first-child{margin-top:0}
+
+.modal{position:fixed;inset:0;background:rgba(10,12,16,.72);display:flex;align-items:flex-end;justify-content:center;z-index:40;padding:0}
+.modal[hidden]{display:none}
+.modalcard{background:var(--raised);border:1px solid var(--line);border-radius:14px 14px 0 0;padding:20px 18px 24px;width:100%;max-width:560px;max-height:82vh;overflow-y:auto}
+.modalcard h2{font-family:var(--serif);font-weight:600;font-size:1.2rem;margin:0 0 12px}
+.modalrow{display:flex;gap:10px;margin-top:18px}
+.modalrow .ghost,.modalrow .save{margin-top:0;flex:1}
+.importstat{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:.88rem}
+.importstat b{font-family:var(--serif);font-weight:600}
+.importwarn{margin-top:12px;padding:10px 12px;background:rgba(168,96,63,.14);border-left:3px solid var(--clay);border-radius:4px;font-size:.82rem;color:var(--text)}
+.importlist{margin-top:10px;max-height:160px;overflow-y:auto;font-size:.8rem;color:var(--soft);line-height:1.6}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--sage);color:#14180F;padding:11px 20px;border-radius:8px;font-size:.92rem;font-weight:500;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:30}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -229,14 +241,31 @@ textarea{resize:vertical;min-height:70px}
   <button class="ghost" onclick="exportCSV()">Download all entries as CSV</button>
   <div class="datatools">
     <p>A backup file is the only way to move your entries to another phone or get them back after clearing your browser. Worth doing every month or so.</p>
-    <p>Sample data is fictional and exists only to show what the app looks like once it has history in it. Loading it replaces whatever is stored now.</p>
     <button class="ghost" onclick="backup()">Save a backup file</button>
     <button class="ghost" onclick="document.getElementById('restoreFile').click()">Restore from a backup file</button>
     <input type="file" id="restoreFile" accept="application/json" hidden onchange="restore(this)">
+
+    <p>Import entries from a CSV or Excel file — your own export, or a spreadsheet you've been tracking in.</p>
+    <button class="ghost" id="importBtn" onclick="document.getElementById('importFile').click()">Import from CSV or Excel</button>
+    <input type="file" id="importFile" accept=".csv,.xlsx,.xls" hidden onchange="handleImportFile(this)">
+
+    <p>Sample data is fictional and exists only to show what the app looks like once it has history in it. Loading it replaces whatever is stored now.</p>
     <button class="ghost" onclick="loadSample()">Load six months of sample data</button>
     <button class="ghost" onclick="clearAll()">Delete all entries</button>
   </div>
 </section>
+
+<!-- ================= IMPORT PREVIEW ================= -->
+<div class="modal" id="importModal" hidden>
+  <div class="modalcard">
+    <h2 id="importTitle">Review import</h2>
+    <div id="importBody"></div>
+    <div class="modalrow">
+      <button class="ghost" onclick="closeImport()">Cancel</button>
+      <button class="save" id="importConfirm" onclick="confirmImport()">Import</button>
+    </div>
+  </div>
+</div>
 
 </div>
 <div class="toast" id="toast"></div>
@@ -474,6 +503,191 @@ async function restore(input){
   localStorage.removeItem("headache-sample");
   await persist(); banner(); paint();
   toast(added.length ? added.length+" entries restored" : "Already up to date");
+}
+
+/* ---------- import ---------- */
+const IMPACT_FROM_TEXT = Object.fromEntries(
+  Object.entries(IMPACT_TEXT).map(([k,v]) => [v.toLowerCase(), Number(k)])
+);
+const SYMPTOM_ALIASES = {
+  "nausea":"Nausea", "vomiting":"Vomiting",
+  "light sensitivity":"Light sensitivity", "sound sensitivity":"Sound sensitivity",
+  "dizziness":"Dizziness", "vision":"Vision changes or aura",
+  "trouble thinking":"Trouble thinking clearly", "neck":"Neck pain",
+  "smell":"Smell sensitivity"
+};
+
+function normHeader(h){ return String(h||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim(); }
+
+// find the first row value whose header contains every word in `needles`
+function pick(row, headerMap, ...needleSets){
+  for(const needles of needleSets){
+    for(const [norm, orig] of headerMap){
+      if(needles.every(n => norm.includes(n))) {
+        const v = row[orig];
+        if(v !== undefined && v !== "") return v;
+      }
+    }
+  }
+  return "";
+}
+
+function excelTimeToHHMM(v){
+  if(v instanceof Date) return String(v.getHours()).padStart(2,"0")+":"+String(v.getMinutes()).padStart(2,"0");
+  const s = String(v).trim();
+  return /^\d{1,2}:\d{2}/.test(s) ? s.slice(0,5) : "";
+}
+function excelDateToISO(v){
+  if(v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return m[0];
+  const d = new Date(s);
+  return isNaN(d) ? "" : d.toISOString().slice(0,10);
+}
+
+function rowsToEntries(rows){
+  const skipped = [];
+  const parsed = [];
+  rows.forEach((row, i) => {
+    const headerMap = Object.keys(row).map(h => [normHeader(h), h]);
+    const date = excelDateToISO(pick(row, headerMap, ["date"]));
+    if(!date){ skipped.push("Row "+(i+2)+": no readable date"); return; }
+
+    // impact: prefer an explicit label (our own export); otherwise derive
+    // it from the original tracker's yes/no functional columns.
+    let impact = null;
+    const impactText = String(pick(row, headerMap, ["functional","impact"], ["impact"])).toLowerCase().trim();
+    if(IMPACT_FROM_TEXT[impactText] !== undefined) impact = IMPACT_FROM_TEXT[impactText];
+    if(impact === null){
+      const layDown = /^y/i.test(pick(row, headerMap, ["lie","down"], ["dark","room"]));
+      const stopped = /^y/i.test(pick(row, headerMap, ["stopped"]));
+      const hoursLost = Number(pick(row, headerMap, ["hours","unable"])) || 0;
+      if(layDown && hoursLost >= 8) impact = 5;
+      else if(layDown) impact = 4;
+      else if(stopped) impact = 3;
+      else if(hoursLost > 0) impact = 2;
+      else impact = 1;
+    }
+
+    const symptoms = [];
+    for(const [norm, orig] of headerMap){
+      for(const key in SYMPTOM_ALIASES){
+        if(norm.includes(key) && /^y/i.test(String(row[orig]))) symptoms.push(SYMPTOM_ALIASES[key]);
+      }
+    }
+    // our own CSV/backup export uses one joined column instead of per-symptom Yes/No
+    const joined = pick(row, headerMap, ["symptoms"]);
+    if(joined){
+      const canon = [...new Set(Object.values(SYMPTOM_ALIASES))];
+      String(joined).split(/[;,]/).map(s => s.trim().toLowerCase()).forEach(piece => {
+        const hit = canon.find(c => c.toLowerCase() === piece || piece.includes(c.toLowerCase()));
+        if(hit) symptoms.push(hit);
+      });
+    }
+
+    const painRaw = pick(row, headerMap, ["peak","pain"], ["pain"]);
+    const pain = painRaw === "" ? null : Number(painRaw);
+    const durRaw = pick(row, headerMap, ["duration"]);
+    const duration = durRaw === "" ? null : Number(durRaw);
+
+    parsed.push({
+      id: null, // assigned on confirm, after de-dup against existing entries
+      date,
+      start: excelTimeToHHMM(pick(row, headerMap, ["start"])),
+      end: excelTimeToHHMM(pick(row, headerMap, ["end"])),
+      duration: (duration != null && !isNaN(duration)) ? duration : null,
+      impact,
+      pain: (pain != null && !isNaN(pain)) ? Math.max(0, Math.min(10, Math.round(pain))) : null,
+      symptoms: [...new Set(symptoms)],
+      work: String(pick(row, headerMap, ["work"], ["school"])).trim(),
+      med: String(pick(row, headerMap, ["medication"], ["med"])).trim(),
+      relief: String(pick(row, headerMap, ["relief"])).trim(),
+      sleep: String(pick(row, headerMap, ["sleep"])).trim(),
+      trig: String(pick(row, headerMap, ["trigger"], ["possible"], ["trig"])).trim(),
+      notes: String(pick(row, headerMap, ["notes"])).trim()
+    });
+  });
+  return { parsed, skipped };
+}
+
+let pendingImport = null;
+
+async function handleImportFile(input){
+  const file = input.files && input.files[0];
+  input.value = "";
+  if(!file) return;
+  const btn = $("importBtn");
+  const original = btn.textContent;
+  btn.textContent = "Reading file\u2026"; btn.disabled = true;
+  try{
+    await loadSheetJS();
+    const isCSV = /\.csv$/i.test(file.name);
+    let rows;
+    if(isCSV){
+      const text = await file.text();
+      const wb = XLSX.read(text, {type:"string"});
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:""});
+    } else {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:"array", cellDates:true});
+      // prefer a sheet literally called "Headache Log" if this is one of our own files
+      const name = wb.SheetNames.find(n => /log/i.test(n)) || wb.SheetNames[0];
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[name], {defval:"", raw:false, dateNF:"yyyy-mm-dd"});
+      // raw:false stringifies dates oddly in some builds — retry with cellDates if nothing parsed
+      const test = rowsToEntries(rows.slice(0,3));
+      if(test.parsed.length === 0 && rows.length){
+        rows = XLSX.utils.sheet_to_json(wb.Sheets[name], {defval:""});
+      }
+    }
+    if(!rows.length){ toast("That file has no rows to import."); return; }
+
+    const { parsed, skipped } = rowsToEntries(rows);
+    if(!parsed.length){
+      toast("Couldn't find a recognizable date column in that file.");
+      return;
+    }
+
+    const seen = new Set(entries.map(e => e.date+"|"+e.start+"|"+(e.pain??"")));
+    const fresh = parsed.filter(e => !seen.has(e.date+"|"+e.start+"|"+(e.pain??"")));
+    const dupes = parsed.length - fresh.length;
+
+    pendingImport = fresh;
+    renderImportPreview(file.name, parsed.length, fresh.length, dupes, skipped);
+  } catch(err){
+    toast("Couldn't read that file. CSV and .xlsx are supported.");
+  } finally {
+    btn.textContent = original; btn.disabled = false;
+  }
+}
+
+function renderImportPreview(filename, total, fresh, dupes, skipped){
+  $("importTitle").textContent = "Review import";
+  const skipList = skipped.slice(0,8).map(s => `<div>${esc(s)}</div>`).join("");
+  const more = skipped.length > 8 ? `<div>and ${skipped.length-8} more</div>` : "";
+  $("importBody").innerHTML = `
+    <div class="importstat"><span>File</span><b>${esc(filename)}</b></div>
+    <div class="importstat"><span>Rows read with a usable date</span><b>${total}</b></div>
+    <div class="importstat"><span>Already in your log — skipped</span><b>${dupes}</b></div>
+    <div class="importstat"><span>New entries to add</span><b>${fresh}</b></div>
+    ${skipped.length ? `<div class="importwarn">${skipped.length} row${skipped.length===1?"":"s"} had no readable date and won't be imported.<div class="importlist">${skipList}${more}</div></div>` : ""}
+    ${fresh === 0 ? `<div class="importwarn">Nothing new to add — every matching row is already in your log.</div>` : `<div class="importwarn">Functional impact is read directly when your file has that column. Otherwise it's estimated from "stopped activities" / "lie down" columns, so review a few entries in History after importing.</div>`}
+  `;
+  $("importConfirm").disabled = fresh === 0;
+  $("importConfirm").textContent = fresh ? `Import ${fresh} ${fresh===1?"entry":"entries"}` : "Nothing to import";
+  $("importModal").hidden = false;
+}
+
+function closeImport(){ $("importModal").hidden = true; pendingImport = null; }
+
+async function confirmImport(){
+  if(!pendingImport || !pendingImport.length) return;
+  const withIds = pendingImport.map((e,i) => ({...e, id: Date.now()+i}));
+  entries = entries.concat(withIds).sort((a,b) => b.date.localeCompare(a.date));
+  localStorage.removeItem("headache-sample"); banner();
+  await persist(); paint();
+  closeImport();
+  toast(withIds.length + " " + (withIds.length===1?"entry":"entries") + " imported");
 }
 
 /* ---------- export: Excel ---------- */

@@ -76,6 +76,41 @@ textarea{resize:vertical;min-height:70px}
 .save:focus-visible{outline:2px solid var(--text);outline-offset:2px}
 .ghost{width:100%;margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:8px;background:none;color:var(--soft);font-family:var(--sans);font-size:.92rem;cursor:pointer}
 
+/* ---------- home ---------- */
+.gate{background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:26px 20px;margin-top:18px;text-align:center}
+.gate h2{font-family:var(--serif);font-weight:600;font-size:1.35rem;margin:0 0 18px;line-height:1.3}
+.gaterow{display:flex;gap:10px}
+.gaterow button{flex:1;padding:16px 10px;border-radius:10px;font-family:var(--sans);font-size:1rem;font-weight:600;cursor:pointer;border:1px solid var(--line)}
+.gaterow .yes{background:var(--amber);color:#1A1E26;border:0}
+.gaterow .no{background:none;color:var(--text)}
+.gaterow button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.gatelink{margin-top:16px}
+.gatelink button{background:none;border:0;color:var(--soft);font-family:var(--sans);font-size:.84rem;text-decoration:underline;cursor:pointer;padding:6px}
+
+.ongoing{background:var(--raised2);border:1px solid var(--amber-dim);border-radius:12px;padding:20px;margin-top:18px}
+.ongoing .tag{font-family:var(--sans);font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--amber)}
+.ongoing h2{font-family:var(--serif);font-weight:600;font-size:1.3rem;margin:6px 0 2px}
+.ongoing .elapsed{color:var(--soft);font-size:.88rem}
+.ongoing .save{margin-top:16px}
+
+/* ---------- wizard ---------- */
+.wizardOverlay{position:fixed;inset:0;background:var(--ground);z-index:50;display:flex;flex-direction:column}
+.wizardOverlay[hidden]{display:none}
+.wizTop{display:flex;align-items:center;justify-content:space-between;padding:16px 14px}
+.wizIcon{background:none;border:0;color:var(--soft);font-size:1.4rem;line-height:1;padding:8px;cursor:pointer;border-radius:6px}
+.wizIcon:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.wizIcon:disabled{opacity:0;pointer-events:none}
+.wizDots{display:flex;gap:6px}
+.wizDots span{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.wizDots span.on{background:var(--amber);width:16px;border-radius:3px;transition:width .2s}
+.wizBody{flex:1;overflow-y:auto;padding:6px 20px 20px;max-width:560px;width:100%;margin:0 auto;box-sizing:border-box}
+.wizBody h2{font-family:var(--serif);font-weight:600;font-size:1.45rem;margin:10px 0 6px;line-height:1.3}
+.wizBody .sub{font-size:.86rem;color:var(--soft);margin:0 0 20px}
+.wizBottom{padding:12px 20px 22px;max-width:560px;width:100%;margin:0 auto;box-sizing:border-box}
+.wizBottom .ghost{margin-top:0;margin-bottom:10px}
+.wizBottom .save{margin-top:0}
+@media (prefers-reduced-motion:reduce){.wizDots span.on{transition:none}}
+
 .banner{display:flex;align-items:center;gap:12px;justify-content:space-between;
   background:var(--amber-dim);color:#F2E8D6;padding:10px 14px;border-radius:8px;
   margin-top:14px;font-size:.85rem;line-height:1.35}
@@ -154,81 +189,31 @@ textarea{resize:vertical;min-height:70px}
   <h1>Headache Record</h1>
   <p>Stays on this device. Nothing is uploaded.</p>
   <nav role="tablist">
-    <button role="tab" id="tab-log" aria-selected="true" onclick="show('log')">Log</button>
+    <button role="tab" id="tab-home" aria-selected="true" onclick="show('home')">Home</button>
     <button role="tab" id="tab-history" aria-selected="false" onclick="show('history')">History</button>
     <button role="tab" id="tab-summary" aria-selected="false" onclick="show('summary')">Summary</button>
   </nav>
 </header>
 
-<!-- ================= LOG ================= -->
-<section id="log">
-  <div class="field">
-    <span class="lbl">What could you still do?</span>
-    <div class="impact" id="impact">
-      <button class="lv1" data-v="1" aria-pressed="false"><span class="bar"></span>I kept going</button>
-      <button class="lv2" data-v="2" aria-pressed="false"><span class="bar"></span>I slowed down but carried on</button>
-      <button class="lv3" data-v="3" aria-pressed="false"><span class="bar"></span>I had to stop what I was doing</button>
-      <button class="lv4" data-v="4" aria-pressed="false"><span class="bar"></span>I had to lie down in the dark</button>
-      <button class="lv5" data-v="5" aria-pressed="false"><span class="bar"></span>I couldn't do anything for hours</button>
-    </div>
-  </div>
-
-  <div class="field two">
-    <div><label for="date">Date</label><input type="date" id="date"></div>
-    <div><label for="start">Started</label><input type="time" id="start"></div>
-  </div>
-  <div class="field two">
-    <div><label for="end">Ended</label><input type="time" id="end"></div>
-    <div><label for="sleep">Sleep the night before (hrs)</label><input type="number" id="sleep" step="0.5" min="0" max="16" inputmode="decimal"></div>
-  </div>
-
-  <div class="field">
-    <label for="pain">Pain at its worst</label>
-    <div class="pain">
-      <input type="range" id="pain" min="0" max="10" value="5" oninput="document.getElementById('painv').textContent=this.value">
-      <output id="painv">5</output>
-    </div>
-  </div>
-
-  <div class="field">
-    <span class="lbl">Other symptoms</span>
-    <p class="hint">Tap any that were present.</p>
-    <div class="chips" id="symptoms"></div>
-  </div>
-
-  <div class="field">
-    <label for="work">Effect on work or plans</label>
-    <select id="work">
-      <option value="">Not recorded</option>
-      <option>No work scheduled</option>
-      <option>Worked normally</option>
-      <option>Worked but reduced</option>
-      <option>Left early</option>
-      <option>Missed a full day</option>
-      <option>Cancelled plans</option>
-    </select>
-  </div>
-
-  <div class="field two">
-    <div><label for="med">Medication taken</label><input type="text" id="med" placeholder="Name and dose"></div>
-    <div><label for="relief">Relief</label>
-      <select id="relief"><option value="">—</option><option>None</option><option>Partial</option><option>Complete</option></select>
-    </div>
-  </div>
-
-  <div class="field">
-    <label for="trig">Anything that might be related</label>
-    <input type="text" id="trig" placeholder="Sleep, stress, skipped meal, screens, weather">
-  </div>
-
-  <div class="field">
-    <label for="notes">Notes</label>
-    <textarea id="notes" placeholder="Anything you want your doctor to know"></textarea>
-  </div>
-
-  <button class="save" id="saveBtn" onclick="saveEntry()">Save entry</button>
-  <button class="ghost" onclick="resetForm()">Clear form</button>
+<!-- ================= HOME ================= -->
+<section id="home">
+  <div id="ongoingCard" hidden></div>
+  <div id="gateCard"></div>
 </section>
+
+<!-- ================= WIZARD (full-screen step flow) ================= -->
+<div class="wizardOverlay" id="wizardOverlay" hidden>
+  <div class="wizTop">
+    <button class="wizIcon" id="wizBack" onclick="wizardBack()" aria-label="Back">&larr;</button>
+    <div class="wizDots" id="wizDots"></div>
+    <button class="wizIcon" id="wizClose" onclick="wizardClose()" aria-label="Save and exit">&times;</button>
+  </div>
+  <div class="wizBody" id="wizBody"></div>
+  <div class="wizBottom">
+    <button class="ghost" id="wizSkip" onclick="wizardSkip()" hidden>Skip</button>
+    <button class="save" id="wizContinue" onclick="wizardContinue()">Continue</button>
+  </div>
+</div>
 
 <!-- ================= HISTORY ================= -->
 <section id="history" hidden><div id="historyBody"></div></section>
@@ -275,7 +260,7 @@ const SYMPTOMS = ["Nausea","Vomiting","Light sensitivity","Sound sensitivity","D
   "Vision changes or aura","Trouble thinking clearly","Neck pain","Smell sensitivity"];
 const IMPACT_TEXT = {1:"Kept going",2:"Slowed down",3:"Had to stop",4:"Lay down in the dark",5:"Could not function"};
 const KEY = "headache-entries";
-let entries = [], impact = null, chosen = new Set();
+let entries = [];
 let openMonths = new Set();
 function toggleMonth(k){ openMonths.has(k) ? openMonths.delete(k) : openMonths.add(k); paint(); }
 
@@ -288,6 +273,7 @@ async function load(){
     entries = raw ? JSON.parse(raw) : [];
   }catch(e){ entries = []; }
   banner();
+  renderHome();
   paint();
 }
 async function persist(){
@@ -297,44 +283,15 @@ async function persist(){
 
 /* ---------- ui ---------- */
 function show(which){
-  ["log","history","summary"].forEach(s=>{
+  ["home","history","summary"].forEach(s=>{
     $(s).hidden = s!==which;
     $("tab-"+s).setAttribute("aria-selected", s===which);
   });
-  if(which!=="log") paint();
+  if(which==="home") renderHome(); else paint();
 }
 function toast(msg){
   const t=$("toast"); t.textContent=msg; t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"),2200);
-}
-
-SYMPTOMS.forEach(s=>{
-  const b=document.createElement("button");
-  b.textContent=s; b.setAttribute("aria-pressed","false");
-  b.onclick=()=>{
-    const on=b.getAttribute("aria-pressed")==="true";
-    b.setAttribute("aria-pressed",!on);
-    on?chosen.delete(s):chosen.add(s);
-  };
-  $("symptoms").appendChild(b);
-});
-
-$("impact").querySelectorAll("button").forEach(b=>{
-  b.onclick=()=>{
-    $("impact").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));
-    b.setAttribute("aria-pressed","true");
-    impact = Number(b.dataset.v);
-  };
-});
-
-function resetForm(){
-  impact=null; chosen.clear();
-  $("impact").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));
-  $("symptoms").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));
-  ["start","end","sleep","med","trig","notes"].forEach(i=>$(i).value="");
-  ["work","relief"].forEach(i=>$(i).value="");
-  $("pain").value=5; $("painv").textContent="5";
-  $("date").value = new Date().toISOString().slice(0,10);
 }
 
 function dur(s,e){
@@ -343,33 +300,300 @@ function dur(s,e){
   let d=(eh*60+em)-(sh*60+sm); if(d<0) d+=1440;
   return Math.round(d/6)/10;
 }
-
-async function saveEntry(){
-  if(!impact){ toast("Choose what you could still do."); return; }
-  if(!$("date").value){ toast("Add the date."); return; }
-  const e = {
-    id: Date.now(), date:$("date").value, start:$("start").value, end:$("end").value,
-    impact, pain:Number($("pain").value), symptoms:[...chosen],
-    work:$("work").value, med:$("med").value.trim(), relief:$("relief").value,
-    sleep:$("sleep").value, trig:$("trig").value.trim(), notes:$("notes").value.trim()
-  };
-  e.duration = dur(e.start,e.end);
-  $("saveBtn").disabled = true;
-  localStorage.removeItem("headache-sample"); banner();
-  entries.push(e); entries.sort((a,b)=>b.date.localeCompare(a.date));
-  const ok = await persist();
-  $("saveBtn").disabled = false;
-  if(ok){ toast("Entry saved"); resetForm(); paint(); }
-  else entries = entries.filter(x=>x.id!==e.id);
+function nowHHMM(){
+  const d=new Date(); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
 }
 
 async function removeEntry(id){
+  if(!confirm("Delete this entry?")) return;
   entries = entries.filter(e=>e.id!==id);
   await persist(); paint();
 }
 
+/* ========================================================
+   HOME — the gate question, and the in-progress card
+   ======================================================== */
+function findOngoing(){ return entries.find(e => e.status === "ongoing"); }
+
+function renderHome(){
+  const ongoing = findOngoing();
+  $("ongoingCard").hidden = !ongoing;
+  $("gateCard").innerHTML = "";
+
+  if(ongoing){
+    const mins = Math.max(0, Math.round((Date.now() - ongoing.id) / 60000));
+    const h = Math.floor(mins/60), m = mins%60;
+    $("ongoingCard").innerHTML = `
+      <div class="ongoing">
+        <div class="tag">In progress</div>
+        <h2>${IMPACT_TEXT[ongoing.impact] || "Headache logged"}</h2>
+        <div class="elapsed">Started ${ongoing.start || ""} &middot; ${h?h+"h ":""}${m}m so far</div>
+        <button class="save" onclick="startFinishFlow(${ongoing.id})">This has ended</button>
+        <button class="ghost" onclick="removeEntry(${ongoing.id})">Discard this entry</button>
+      </div>`;
+    return;
+  }
+
+  $("gateCard").innerHTML = `
+    <div class="gate">
+      <h2>Are you having a headache right now?</h2>
+      <div class="gaterow">
+        <button class="yes" onclick="startQuickFlow()">Yes</button>
+        <button class="no" onclick="show('history')">No</button>
+      </div>
+      <div class="gatelink"><button onclick="startPastFlow()">Log one that already happened</button></div>
+    </div>`;
+}
+
+/* ========================================================
+   WIZARD ENGINE — one question per screen, drafts autosave
+   ======================================================== */
+const DRAFT_KEY = "headache-draft";
+let wiz = null; // {flow, steps, i, draft, entryId}
+
+function saveDraft(){
+  if(!wiz) return;
+  try{ localStorage.setItem(DRAFT_KEY, JSON.stringify({flow:wiz.flow, i:wiz.i, draft:wiz.draft, entryId:wiz.entryId||null})); }catch(e){}
+}
+function clearDraft(){ localStorage.removeItem(DRAFT_KEY); }
+
+function openWizard(flow, steps, draft, entryId, resumeAt){
+  wiz = { flow, steps, i: resumeAt||0, draft, entryId };
+  $("wizardOverlay").hidden = false;
+  renderWizStep();
+}
+
+function wizardClose(){
+  saveDraft();
+  $("wizardOverlay").hidden = true;
+  toast("Saved for later \u2014 pick up where you left off anytime");
+  renderHome();
+}
+
+function renderDots(){
+  $("wizDots").innerHTML = wiz.steps.map((_,i)=>`<span class="${i<=wiz.i?"on":""}"></span>`).join("");
+}
+
+function renderWizStep(){
+  const step = wiz.steps[wiz.i];
+  $("wizBack").disabled = wiz.i === 0;
+  $("wizSkip").hidden = !step.optional;
+  $("wizContinue").hidden = !!step.autoAdvance;
+  $("wizContinue").textContent = wiz.i === wiz.steps.length-1 ? "Save" : "Continue";
+  renderDots();
+  step.render($("wizBody"), wiz.draft);
+  saveDraft();
+}
+
+function wizardBack(){ if(wiz.i>0){ wiz.i--; renderWizStep(); } }
+function wizardSkip(){ wizardAdvance(); }
+
+function wizardContinue(){
+  const step = wiz.steps[wiz.i];
+  if(step.validate && !step.validate(wiz.draft)){
+    toast(step.errorMsg || "Add that before continuing.");
+    return;
+  }
+  wizardAdvance();
+}
+
+async function wizardAdvance(){
+  if(wiz.i < wiz.steps.length - 1){
+    wiz.i++; renderWizStep();
+  } else {
+    await wiz.onFinish(wiz.draft, wiz.entryId);
+    clearDraft();
+    $("wizardOverlay").hidden = true;
+    wiz = null;
+    renderHome(); paint();
+  }
+}
+
+/* ---- reusable step content builders ---- */
+function stepImpact(container, draft){
+  container.innerHTML = `
+    <h2>What could you still do?</h2>
+    <div class="impact" id="wImpact">
+      <button class="lv1" data-v="1"><span class="bar"></span>I kept going</button>
+      <button class="lv2" data-v="2"><span class="bar"></span>I slowed down but carried on</button>
+      <button class="lv3" data-v="3"><span class="bar"></span>I had to stop what I was doing</button>
+      <button class="lv4" data-v="4"><span class="bar"></span>I had to lie down in the dark</button>
+      <button class="lv5" data-v="5"><span class="bar"></span>I couldn't do anything for hours</button>
+    </div>`;
+  const grp = container.querySelector("#wImpact");
+  grp.querySelectorAll("button").forEach(b=>{
+    b.setAttribute("aria-pressed", String(Number(b.dataset.v)===draft.impact));
+    b.onclick = () => { draft.impact = Number(b.dataset.v); wizardAdvance(); };
+  });
+}
+function stepPain(container, draft){
+  if(draft.pain == null) draft.pain = 5;
+  container.innerHTML = `
+    <h2>Pain at its worst</h2>
+    <div class="pain"><input type="range" id="wPain" min="0" max="10" value="${draft.pain}"><output id="wPainV">${draft.pain}</output></div>`;
+  const r = container.querySelector("#wPain");
+  r.oninput = () => { draft.pain = Number(r.value); container.querySelector("#wPainV").textContent = r.value; };
+}
+function stepSymptoms(container, draft){
+  if(!draft.symptoms) draft.symptoms = [];
+  container.innerHTML = `
+    <h2>Other symptoms</h2>
+    <p class="sub">Tap any that were present. Skip if none.</p>
+    <div class="chips" id="wSymptoms"></div>`;
+  const wrap = container.querySelector("#wSymptoms");
+  SYMPTOMS.forEach(s=>{
+    const b = document.createElement("button");
+    b.textContent = s;
+    b.setAttribute("aria-pressed", String(draft.symptoms.includes(s)));
+    b.onclick = () => {
+      const on = b.getAttribute("aria-pressed")==="true";
+      b.setAttribute("aria-pressed", !on);
+      if(on) draft.symptoms = draft.symptoms.filter(x=>x!==s); else draft.symptoms.push(s);
+    };
+    wrap.appendChild(b);
+  });
+}
+function stepNote(container, draft){
+  container.innerHTML = `
+    <h2>Anything else, right now?</h2>
+    <p class="sub">Optional. A word or two is plenty \u2014 you can add more when you close this out.</p>
+    <div class="field"><textarea id="wNote" placeholder="e.g. started behind the right eye">${draft.notes||""}</textarea></div>`;
+  container.querySelector("#wNote").oninput = e => draft.notes = e.target.value;
+}
+function stepEndTime(container, draft){
+  if(!draft.end) draft.end = nowHHMM();
+  container.innerHTML = `
+    <h2>When did it end?</h2>
+    <div class="field"><input type="time" id="wEnd" value="${draft.end}"></div>`;
+  container.querySelector("#wEnd").oninput = e => draft.end = e.target.value;
+}
+function stepWork(container, draft){
+  const opts = ["No work scheduled","Worked normally","Worked but reduced","Left early","Missed a full day","Cancelled plans"];
+  container.innerHTML = `
+    <h2>Effect on work or plans</h2>
+    <p class="sub">Optional.</p>
+    <div class="field"><select id="wWork"><option value="">Not recorded</option>${opts.map(o=>`<option${draft.work===o?" selected":""}>${o}</option>`).join("")}</select></div>`;
+  container.querySelector("#wWork").onchange = e => draft.work = e.target.value;
+}
+function stepMed(container, draft){
+  container.innerHTML = `
+    <h2>Medication</h2>
+    <p class="sub">Optional.</p>
+    <div class="field"><label for="wMed">Taken</label><input type="text" id="wMed" placeholder="Name and dose" value="${draft.med||""}"></div>
+    <div class="field"><label for="wRelief">Relief</label>
+      <select id="wRelief"><option value="">&mdash;</option>${["None","Partial","Complete"].map(o=>`<option${draft.relief===o?" selected":""}>${o}</option>`).join("")}</select>
+    </div>`;
+  container.querySelector("#wMed").oninput = e => draft.med = e.target.value;
+  container.querySelector("#wRelief").onchange = e => draft.relief = e.target.value;
+}
+function stepSleepTrig(container, draft){
+  container.innerHTML = `
+    <h2>A little context</h2>
+    <p class="sub">Both optional.</p>
+    <div class="field"><label for="wSleep">Sleep the night before (hrs)</label><input type="number" id="wSleep" step="0.5" min="0" max="16" inputmode="decimal" value="${draft.sleep||""}"></div>
+    <div class="field"><label for="wTrig">Anything that might be related</label><input type="text" id="wTrig" placeholder="Sleep, stress, skipped meal, screens, weather" value="${draft.trig||""}"></div>`;
+  container.querySelector("#wSleep").oninput = e => draft.sleep = e.target.value;
+  container.querySelector("#wTrig").oninput = e => draft.trig = e.target.value;
+}
+function stepDateTimes(container, draft){
+  if(!draft.date) draft.date = new Date().toISOString().slice(0,10);
+  container.innerHTML = `
+    <h2>When was this?</h2>
+    <div class="field"><label for="wDate">Date</label><input type="date" id="wDate" value="${draft.date}"></div>
+    <div class="field two">
+      <div><label for="wStart">Started</label><input type="time" id="wStart" value="${draft.start||""}"></div>
+      <div><label for="wEnd2">Ended</label><input type="time" id="wEnd2" value="${draft.end||""}"></div>
+    </div>`;
+  container.querySelector("#wDate").oninput = e => draft.date = e.target.value;
+  container.querySelector("#wStart").oninput = e => draft.start = e.target.value;
+  container.querySelector("#wEnd2").oninput = e => draft.end = e.target.value;
+}
+
+/* ---- flows ---- */
+function startQuickFlow(){
+  openWizard("quick", [
+    { render: stepImpact, autoAdvance: true, validate: d => d.impact != null, errorMsg: "Choose what you could still do." },
+    { render: stepPain },
+    { render: stepSymptoms, optional: true },
+    { render: stepNote, optional: true }
+  ], {}, null);
+  wiz.onFinish = async (draft) => {
+    const e = {
+      id: Date.now(), date: new Date().toISOString().slice(0,10), start: nowHHMM(), end: "",
+      status: "ongoing", impact: draft.impact, pain: draft.pain ?? null,
+      symptoms: draft.symptoms||[], work:"", med:"", relief:"", sleep:"", trig:"", notes: draft.notes||"",
+      duration: null
+    };
+    localStorage.removeItem("headache-sample"); banner();
+    entries.push(e); entries.sort((a,b)=>b.date.localeCompare(a.date));
+    await persist();
+    toast("Logged. Close it out when it's over.");
+  };
+}
+
+function startFinishFlow(entryId){
+  const existing = entries.find(e=>e.id===entryId);
+  if(!existing) return;
+  openWizard("finish", [
+    { render: stepEndTime, validate: d => !!d.end, errorMsg: "Add an end time \u2014 use now if you're not sure." },
+    { render: stepWork, optional: true },
+    { render: stepMed, optional: true },
+    { render: stepSleepTrig, optional: true }
+  ], { end: nowHHMM() }, entryId);
+  wiz.onFinish = async (draft, id) => {
+    const e = entries.find(x=>x.id===id);
+    if(!e) return;
+    e.end = draft.end; e.work = draft.work||""; e.med = draft.med||""; e.relief = draft.relief||"";
+    e.sleep = draft.sleep||""; e.trig = draft.trig||"";
+    e.duration = dur(e.start, e.end);
+    delete e.status;
+    await persist();
+    toast("Entry completed");
+  };
+}
+
+function startPastFlow(){
+  openWizard("past", [
+    { render: stepDateTimes, validate: d => !!d.date, errorMsg: "Add the date." },
+    { render: stepImpact, autoAdvance: true, validate: d => d.impact != null, errorMsg: "Choose what could still do." },
+    { render: stepPain },
+    { render: stepSymptoms, optional: true },
+    { render: stepWork, optional: true },
+    { render: stepMed, optional: true },
+    { render: stepSleepTrig, optional: true }
+  ], {}, null);
+  wiz.onFinish = async (draft) => {
+    const e = {
+      id: Date.now(), date: draft.date, start: draft.start||"", end: draft.end||"",
+      impact: draft.impact, pain: draft.pain ?? null, symptoms: draft.symptoms||[],
+      work: draft.work||"", med: draft.med||"", relief: draft.relief||"",
+      sleep: draft.sleep||"", trig: draft.trig||"", notes: draft.notes||""
+    };
+    e.duration = dur(e.start, e.end);
+    localStorage.removeItem("headache-sample"); banner();
+    entries.push(e); entries.sort((a,b)=>b.date.localeCompare(a.date));
+    await persist();
+    toast("Entry saved");
+  };
+}
+
+/* ---- resume an interrupted wizard on load ---- */
+function resumeDraftIfAny(){
+  let saved;
+  try{ saved = JSON.parse(localStorage.getItem(DRAFT_KEY)); }catch(e){ saved = null; }
+  if(!saved) return;
+  const builders = { quick: startQuickFlow, finish: () => startFinishFlow(saved.entryId), past: startPastFlow };
+  const build = builders[saved.flow];
+  if(!build) { clearDraft(); return; }
+  build();
+  wiz.draft = saved.draft;
+  wiz.i = Math.min(saved.i, wiz.steps.length-1);
+  renderWizStep();
+}
+
 /* ---------- history ---------- */
 function paint(){
+  renderHome();
   const h=$("historyBody");
   if(!entries.length){
     h.innerHTML='<p class="empty">No entries yet.<br>The first one takes about thirty seconds.</p>';
@@ -389,14 +613,16 @@ function paint(){
           <div class="entry">
             <div class="top">
               <span class="d">${new Date(e.date+"T12:00").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}</span>
-              <span class="dur">${e.duration!=null?e.duration+" hrs":"duration not recorded"}${e.pain!=null?" &middot; pain "+e.pain:""}</span>
+              <span class="dur">${e.status==="ongoing" ? "in progress" : (e.duration!=null?e.duration+" hrs":"duration not recorded")}${e.pain!=null?" &middot; pain "+e.pain:""}</span>
             </div>
             <div class="imp">${IMPACT_TEXT[e.impact]}</div>
             ${e.symptoms.length?`<div class="sym">${e.symptoms.join(" &middot; ")}</div>`:""}
             ${e.work?`<div class="sym">${e.work}</div>`:""}
             ${e.med?`<div class="sym">${esc(e.med)}${e.relief?" — "+e.relief.toLowerCase()+" relief":""}</div>`:""}
             ${e.notes?`<div class="sym">${esc(e.notes)}</div>`:""}
-            <button class="rm" onclick="removeEntry(${e.id})">Delete</button>
+            ${e.status==="ongoing"
+              ? `<button class="rm" onclick="startFinishFlow(${e.id})">Finish this entry</button>`
+              : `<button class="rm" onclick="removeEntry(${e.id})">Delete</button>`}
           </div>`).join("") + `</div>`;
     }).join("");
   }
@@ -407,20 +633,24 @@ function esc(s){ return String(s).replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&
 /* ---------- summary: descriptive only ---------- */
 function paintSummary(){
   const s=$("summaryBody");
-  if(!entries.length){
-    s.innerHTML='<p class="empty">Nothing to summarise yet.</p>'; return;
+  const complete = entries.filter(e => e.status !== "ongoing");
+  if(!complete.length){
+    s.innerHTML = entries.length
+      ? '<p class="empty">Nothing to summarise yet \u2014 your headache in progress will appear here once it\u2019s closed out.</p>'
+      : '<p class="empty">Nothing to summarise yet.</p>';
+    return;
   }
-  const dates=entries.map(e=>e.date).sort();
+  const dates=complete.map(e=>e.date).sort();
   const first=dates[0], last=dates[dates.length-1];
   const days=Math.max(1,Math.round((new Date(last)-new Date(first))/864e5)+1);
   const months=days/30.44;
 
-  const n=entries.length;
-  const stopped=entries.filter(e=>e.impact>=3).length;
-  const durs=entries.filter(e=>e.duration!=null).map(e=>e.duration);
-  const pains=entries.filter(e=>e.pain!=null).map(e=>e.pain);
-  const medDays=new Set(entries.filter(e=>e.med).map(e=>e.date)).size;
-  const workAff=entries.filter(e=>["Left early","Missed a full day","Worked but reduced","Cancelled plans"].includes(e.work)).length;
+  const n=complete.length;
+  const stopped=complete.filter(e=>e.impact>=3).length;
+  const durs=complete.filter(e=>e.duration!=null).map(e=>e.duration);
+  const pains=complete.filter(e=>e.pain!=null).map(e=>e.pain);
+  const medDays=new Set(complete.filter(e=>e.med).map(e=>e.date)).size;
+  const workAff=complete.filter(e=>["Left early","Missed a full day","Worked but reduced","Cancelled plans"].includes(e.work)).length;
   const avg=a=>a.length?(a.reduce((x,y)=>x+y,0)/a.length):null;
   const med=a=>{ if(!a.length) return null; const b=[...a].sort((x,y)=>x-y),m=b.length>>1;
     return b.length%2?b[m]:(b[m-1]+b[m])/2; };
@@ -428,7 +658,7 @@ function paintSummary(){
 
   // monthly table
   const byM={};
-  entries.forEach(e=>{ const k=e.date.slice(0,7); (byM[k]=byM[k]||[]).push(e); });
+  complete.forEach(e=>{ const k=e.date.slice(0,7); (byM[k]=byM[k]||[]).push(e); });
   const mk=Object.keys(byM).sort().reverse();
   const rows=mk.map(k=>{
     const g=byM[k], [y,m]=k.split("-");
@@ -441,17 +671,17 @@ function paintSummary(){
 
   // symptom frequencies
   const sc={};
-  entries.forEach(e=>e.symptoms.forEach(x=>sc[x]=(sc[x]||0)+1));
+  complete.forEach(e=>e.symptoms.forEach(x=>sc[x]=(sc[x]||0)+1));
   const sym=Object.entries(sc).sort((a,b)=>b[1]-a[1])
     .map(([k,v])=>`<tr><td>${k}</td><td>${v}</td><td>${Math.round(v/n*100)}%</td></tr>`).join("");
 
-  const impCounts=[1,2,3,4,5].map(v=>[IMPACT_TEXT[v],entries.filter(e=>e.impact===v).length]);
+  const impCounts=[1,2,3,4,5].map(v=>[IMPACT_TEXT[v],complete.filter(e=>e.impact===v).length]);
 
   s.innerHTML=`
   <div class="sumdoc">
     <h2>Headache summary</h2>
     <p class="range">${new Date(first+"T12:00").toLocaleDateString()} to ${new Date(last+"T12:00").toLocaleDateString()} &middot; ${days} days recorded</p>
-
+    ${entries.length > complete.length ? `<p class="range">Plus one headache in progress \u2014 it'll count once closed out.</p>` : ""}
     <table class="tbl"><thead><tr><th>Month</th><th>Entries</th><th>Activity stopped</th><th>Avg hrs</th><th>Avg pain</th><th>Med days</th></tr></thead><tbody>${rows}</tbody></table>
 
     <div class="sub">Across the whole record</div>
@@ -875,8 +1105,10 @@ if("serviceWorker" in navigator){
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
 }
 
-resetForm();
-load();
+// keep the "so far" elapsed time on an in-progress headache moving without a manual refresh
+setInterval(() => { if($("home").hidden === false && !wiz) renderHome(); }, 30000);
+
+load().then(() => { if(!wiz) resumeDraftIfAny(); });
 </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 // Bump CACHE whenever you change any file, or installed copies keep serving the old version.
-const CACHE = "headache-record-v4";
+const CACHE = "headache-record-v5";
 
 // The app cannot run without these.
 const REQUIRED = ["./index.html"];
